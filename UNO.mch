@@ -55,7 +55,7 @@ PROPERTIES
 	VALID_CARDS = NUMBER_CARDS \/ EFFECT_CARDS &
 
 
-	DECK = [WILD, WILD, WILD, WILD, //4x
+	/*DECK = [WILD, WILD, WILD, WILD, //4x
 		WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, // 4x
 		// NUMBER_CARDS
 		(N0 |-> RED), (N0 |-> GREEN), (N0 |-> YELLOW), (N0 |-> BLUE),
@@ -84,7 +84,9 @@ PROPERTIES
 		(eSKIP |-> RED), (eSKIP |-> GREEN), (eSKIP |-> YELLOW), (eSKIP |-> BLUE),
 		(eSKIP |-> RED), (eSKIP |-> GREEN), (eSKIP |-> YELLOW), (eSKIP |-> BLUE),
 		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE),
-		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE)] &
+		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE)] &*/
+
+	DECK = [(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE)] &
 
 	PLAYERS <: NAT1 &
 	PLAYERS = {1,2}
@@ -102,24 +104,23 @@ VARIABLES
 INVARIANT
 	current_card : VALID_CARDS &
 	player_order : perm(PLAYERS) &
-	draw_stack : seq1(VALID_CARDS) &
-	discard_stack : seq1(VALID_CARDS)	// must be a probably empty seq
+	draw_stack <: DECK &
+	discard_stack <: DECK
 INITIALISATION
 	current_card := (N1 |-> YELLOW) ||
  	player_order := [1,2] ||
-	// draw_stack := DECK ||
-	draw_stack := [(N8 |-> YELLOW), (N8 |-> BLACK), (N8 |-> YELLOW)] ||
-	discard_stack := [(N8 |-> BLACK)]
+	draw_stack := DECK ||
+	discard_stack := []
 	
 OPERATIONS
 	cc <-- draw_card =
-		PRE draw_stack /= [] & cc : VALID_CARDS
+		PRE draw_stack /= []
 		THEN
-			ANY x WHERE x : draw_stack 
+			ANY idx , cd WHERE idx : dom(draw_stack) & cd : draw_stack[{idx}]
 			THEN 
-				cc := x
-				// draw_stack := front(draw_stack /|\ x) ^ (draw_stack \|/ x) ||	// seq without x
-				// discard_stack := x
+				cc := draw_stack(idx) ||	
+				draw_stack := front(draw_stack /|\ idx) ^ (draw_stack \|/ idx) ||	// remove the card from the draw_stack
+				discard_stack := discard_stack <- cd	// add card to discrad_stack
 			END
 		END
 		
