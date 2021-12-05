@@ -4,10 +4,8 @@ SETS
 	CARD_VALUES = {
 		N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,
 		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE}
-VARIABLES
-	current_card
 CONSTANTS 
-	/** main sets **/
+	/* main sets */
 	VALID_CARDS,
 	NUMBER_CARDS,
 	EFFECT_CARDS,
@@ -23,16 +21,19 @@ CONSTANTS
 	SKIP_SET,
 	REVERSE_SET,
 
+	/* game */
+	PLAYERS,
 	DECK	// 4 x WILD_DRAW_4, WILD
 		// 4 x N0 == card(COLOR - {BLACK})
 		// 2 x other cards == 2 * card(COLOR - {BLACK})
 PROPERTIES
+
 	MAIN_COLORS <: COLORS &
 	MAIN_COLORS = 		COLORS - {BLACK} &
 
 	// EFFECTS
 	EFFECTS <: CARD_VALUES &
-	EFFECTS =		{eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE} &
+	EFFECTS =	{eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE} &
 	// EFFECT CARDS
 	WILD = 		(eWILD |-> BLACK) &
 	WILD_DRAW_4 = 		(eWILD_DRAW_4 |-> BLACK) &
@@ -53,21 +54,74 @@ PROPERTIES
 
 	VALID_CARDS = NUMBER_CARDS \/ EFFECT_CARDS &
 
-	DECK <: {1,2,3,4} * VALID_CARDS &
-	DECK = ({1,2,3,4} * {WILD, WILD_DRAW_4}) \/
+
+	DECK = [WILD, WILD, WILD, WILD, //4x
+		WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, // 4x
+		// NUMBER_CARDS
+		(N0 |-> RED), (N0 |-> GREEN), (N0 |-> YELLOW), (N0 |-> BLUE),
+		// NUMBER_CARDS 2x
+		(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE),
+		(N2 |-> RED), (N2 |-> GREEN), (N2 |-> YELLOW), (N2 |-> BLUE),
+		(N3 |-> RED), (N3 |-> GREEN), (N3 |-> YELLOW), (N3 |-> BLUE),
+		(N4 |-> RED), (N4 |-> GREEN), (N4 |-> YELLOW), (N4 |-> BLUE),
+		(N5 |-> RED), (N5 |-> GREEN), (N5 |-> YELLOW), (N5 |-> BLUE),
+		(N6 |-> RED), (N6 |-> GREEN), (N6 |-> YELLOW), (N6 |-> BLUE),
+		(N7 |-> RED), (N7 |-> GREEN), (N7 |-> YELLOW), (N7 |-> BLUE),
+		(N8 |-> RED), (N8 |-> GREEN), (N8 |-> YELLOW), (N8 |-> BLUE),
+		(N9 |-> RED), (N9 |-> GREEN), (N9 |-> YELLOW), (N9 |-> BLUE),
+		(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE),
+		(N2 |-> RED), (N2 |-> GREEN), (N2 |-> YELLOW), (N2 |-> BLUE),
+		(N3 |-> RED), (N3 |-> GREEN), (N3 |-> YELLOW), (N3 |-> BLUE),
+		(N4 |-> RED), (N4 |-> GREEN), (N4 |-> YELLOW), (N4 |-> BLUE),
+		(N5 |-> RED), (N5 |-> GREEN), (N5 |-> YELLOW), (N5 |-> BLUE),
+		(N6 |-> RED), (N6 |-> GREEN), (N6 |-> YELLOW), (N6 |-> BLUE),
+		(N7 |-> RED), (N7 |-> GREEN), (N7 |-> YELLOW), (N7 |-> BLUE),
+		(N8 |-> RED), (N8 |-> GREEN), (N8 |-> YELLOW), (N8 |-> BLUE),
+		(N9 |-> RED), (N9 |-> GREEN), (N9 |-> YELLOW), (N9 |-> BLUE),
+		// EFFECT_CARDS
+		(eDRAW_2 |-> RED), (eDRAW_2 |-> GREEN), (eDRAW_2 |-> YELLOW), (eDRAW_2 |-> BLUE),
+		(eDRAW_2 |-> RED), (eDRAW_2 |-> GREEN), (eDRAW_2 |-> YELLOW), (eDRAW_2 |-> BLUE),
+		(eSKIP |-> RED), (eSKIP |-> GREEN), (eSKIP |-> YELLOW), (eSKIP |-> BLUE),
+		(eSKIP |-> RED), (eSKIP |-> GREEN), (eSKIP |-> YELLOW), (eSKIP |-> BLUE),
+		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE),
+		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE)] &
+
+	PLAYERS <: NAT1 &
+	PLAYERS = {1,2}
+
+	/*DECK = ({1,2,3,4} * {WILD, WILD_DRAW_4}) \/
 		({1} * ( {N0} * MAIN_COLORS )) \/
 		({1,2} * ({N0} <<| NUMBER_CARDS)) \/
-		({1,2} * (DRAW_2_SET \/ SKIP_SET \/ REVERSE_SET) )
+		({1,2} * (DRAW_2_SET \/ SKIP_SET \/ REVERSE_SET) )*/
 		
-	
+VARIABLES
+	current_card,
+	draw_stack,
+	discard_stack,
+	player_order
 INVARIANT
-	current_card : NUMBER_CARDS
+	current_card : VALID_CARDS &
+	player_order : perm(PLAYERS) &
+	draw_stack : seq1(VALID_CARDS) &
+	discard_stack : seq1(VALID_CARDS)	// must be a probably empty seq
 INITIALISATION
-	current_card := N1 |-> YELLOW
-/**OPERATIONS
+	current_card := (N1 |-> YELLOW) ||
+ 	player_order := [1,2] ||
+	// draw_stack := DECK ||
+	draw_stack := [(N8 |-> YELLOW), (N8 |-> BLACK), (N8 |-> YELLOW)] ||
+	discard_stack := [(N8 |-> BLACK)]
+	
+OPERATIONS
 	cc <-- draw_card =
-		PRE cc : NUMBER_CARDS
-		THEN cc := current_card
-		END**/
+		PRE draw_stack /= [] & cc : VALID_CARDS
+		THEN
+			ANY x WHERE x : draw_stack 
+			THEN 
+				cc := x
+				// draw_stack := front(draw_stack /|\ x) ^ (draw_stack \|/ x) ||	// seq without x
+				// discard_stack := x
+			END
+		END
+		
 END
 
