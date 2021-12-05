@@ -13,6 +13,8 @@ CONSTANTS
 	NUMBERS,
 	EFFECTS,
 
+	// EMPTY_HAND,
+
 	/* effect cards */
 	WILD,
 	WILD_DRAW_4,
@@ -57,7 +59,7 @@ PROPERTIES
 
 	/*DECK = [WILD, WILD, WILD, WILD, //4x
 		WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, // 4x
-		// NUMBER_CARDS
+		// 0 CARD
 		(N0 |-> RED), (N0 |-> GREEN), (N0 |-> YELLOW), (N0 |-> BLUE),
 		// NUMBER_CARDS 2x
 		(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE),
@@ -91,36 +93,53 @@ PROPERTIES
 	PLAYERS <: NAT1 &
 	PLAYERS = {1,2}
 
+	// EMPTY_HAND
+
 	/*DECK = ({1,2,3,4} * {WILD, WILD_DRAW_4}) \/
 		({1} * ( {N0} * MAIN_COLORS )) \/
 		({1,2} * ({N0} <<| NUMBER_CARDS)) \/
 		({1,2} * (DRAW_2_SET \/ SKIP_SET \/ REVERSE_SET) )*/
 		
 VARIABLES
-	current_card,
 	draw_stack,
 	discard_stack,
-	player_order
-INVARIANT
-	current_card : VALID_CARDS &
+	player_order,
+	players_hands
+INVARIANT 
 	player_order : perm(PLAYERS) &
 	draw_stack <: DECK &
-	discard_stack <: DECK
+	discard_stack <: DECK &
+	players_hands : PLAYERS --> seq(CARD_VALUES*COLORS) &
+	
+	/* deck size invariants */
+	size(draw_stack) + size(discard_stack) = size(DECK)
+
 INITIALISATION
-	current_card := (N1 |-> YELLOW) ||
  	player_order := [1,2] ||
 	draw_stack := DECK ||
-	discard_stack := []
+	discard_stack := [] ||
+	players_hands := COLORS * []
 	
 OPERATIONS
 	cc <-- draw_card =
 		PRE draw_stack /= []
 		THEN
+			ANY idx WHERE idx : dom(draw_stack)
+			THEN 
+				cc := draw_stack(idx) ||	
+				draw_stack := front(draw_stack /|\ idx) ^ (draw_stack \|/ idx) ||	// remove the card from the draw_stack
+				discard_stack := discard_stack <- draw_stack(idx)	// add card to discard_stack
+			END
+		END;
+
+	cc <-- draw_card_hand(pp) =
+		PRE draw_stack /= [] & pp : PLAYERS
+		THEN
 			ANY idx , cd WHERE idx : dom(draw_stack) & cd : draw_stack[{idx}]
 			THEN 
 				cc := draw_stack(idx) ||	
 				draw_stack := front(draw_stack /|\ idx) ^ (draw_stack \|/ idx) ||	// remove the card from the draw_stack
-				discard_stack := discard_stack <- cd	// add card to discrad_stack
+				players_hands(pp) := players_hands(pp) <- cd	// add card to players_hand
 			END
 		END
 		
