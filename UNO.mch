@@ -107,18 +107,18 @@ VARIABLES
 	players_hands
 INVARIANT 
 	player_order : perm(PLAYERS) &
-	draw_stack <: DECK &
-	discard_stack <: DECK &
+	ran(draw_stack) <: ran(DECK) &
+	ran(discard_stack) <: ran(DECK) &
 	players_hands : PLAYERS --> seq(CARD_VALUES*COLORS) &
 	
 	/* deck size invariants */
-	size(draw_stack) + size(discard_stack) = size(DECK)
+	size(draw_stack) + size(discard_stack) + SIGMA (zz) . (zz : ran(players_hands) | size(zz)) = size(DECK)
 
 INITIALISATION
  	player_order := [1,2] ||
 	draw_stack := DECK ||
 	discard_stack := [] ||
-	players_hands := COLORS * []
+	players_hands := PLAYERS * seq({})
 	
 OPERATIONS
 	cc <-- draw_card =
@@ -135,11 +135,11 @@ OPERATIONS
 	cc <-- draw_card_hand(pp) =
 		PRE draw_stack /= [] & pp : PLAYERS
 		THEN
-			ANY idx , cd WHERE idx : dom(draw_stack) & cd : draw_stack[{idx}]
+			ANY idx WHERE idx : dom(draw_stack)
 			THEN 
 				cc := draw_stack(idx) ||	
 				draw_stack := front(draw_stack /|\ idx) ^ (draw_stack \|/ idx) ||	// remove the card from the draw_stack
-				players_hands(pp) := players_hands(pp) <- cd	// add card to players_hand
+				players_hands(pp) := players_hands(pp) <- draw_stack(idx)	// add card to players_hand
 			END
 		END
 		
