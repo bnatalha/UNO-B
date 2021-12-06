@@ -13,8 +13,6 @@ CONSTANTS
 	NUMBERS,
 	EFFECTS,
 
-	// EMPTY_HAND,
-
 	/* effect cards */
 	WILD,
 	WILD_DRAW_4,
@@ -25,9 +23,10 @@ CONSTANTS
 
 	/* game */
 	PLAYERS,
-	DECK	// 4 x WILD_DRAW_4, WILD
+	DECK,	// 4 x WILD_DRAW_4, WILD
 		// 4 x N0 == card(COLOR - {BLACK})
 		// 2 x other cards == 2 * card(COLOR - {BLACK})
+	CAN_PLAY_CARD
 PROPERTIES
 
 	MAIN_COLORS <: COLORS &
@@ -91,9 +90,14 @@ PROPERTIES
 	DECK = [(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE)] &
 
 	PLAYERS <: NAT1 &
-	PLAYERS = {1,2}
+	PLAYERS = {1,2} &
 
-	// EMPTY_HAND
+	CAN_PLAY_CARD : VALID_CARDS <-> VALID_CARDS &
+	!val1 , val2, col1, col2.(
+		(val1 : dom(VALID_CARDS) & val2 : dom(VALID_CARDS) &
+		 col1 : VALID_CARDS[{val1}] & col2 : VALID_CARDS[{val2}]) =>  
+   	 	(col1 = BLACK) or (col2 = BLACK) or (col1 = col2) or (val1 = val2)
+  		)
 
 	/*DECK = ({1,2,3,4} * {WILD, WILD_DRAW_4}) \/
 		({1} * ( {N0} * MAIN_COLORS )) \/
@@ -112,7 +116,7 @@ INVARIANT
 	players_hands : PLAYERS --> seq(CARD_VALUES*COLORS) &
 	
 	/* deck size invariants */
-	size(draw_stack) + size(discard_stack) + SIGMA (zz) . (zz : ran(players_hands) | size(zz)) = size(DECK)
+	size(draw_stack) + size(discard_stack) + SIGMA(zz).(zz : ran(players_hands) | size(zz)) = size(DECK)
 
 INITIALISATION
  	player_order := [1,2] ||
@@ -129,6 +133,15 @@ OPERATIONS
 				cc := draw_stack(idx) ||	
 				draw_stack := front(draw_stack /|\ idx) ^ (draw_stack \|/ idx) ||	// remove the card from the draw_stack
 				discard_stack := discard_stack <- draw_stack(idx)	// add card to discard_stack
+			END
+		END;
+
+	play(pp, cc) =
+		PRE pp : PLAYERS & cc : ran(players_hands(pp)) & (cc |-> last(discard_stack)) : CAN_PLAY_CARD // & pp é jogador da vez
+		THEN 
+			ANY hand, idx WHERE hand = players_hands(pp) & idx : dom((players_hands(pp)) |> {cc}) THEN
+				players_hands(pp) := front(hand /|\ idx) ^ (hand \|/ idx) ||	// remove the card from the players_hand
+				discard_stack := discard_stack <- hand(idx)	// add card to discard_stack
 			END
 		END;
 
