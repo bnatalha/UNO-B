@@ -1,0 +1,4 @@
+*.prob
+*.txt
+bdp/*
+lang/*

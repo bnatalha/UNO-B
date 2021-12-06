@@ -1,6 +1,7 @@
 /**
 TODO: 
 	- initialize with 7 cards for each player;
+	- initialize the discard_stack with 2 cards taken from the draw_stack;
 	- plays_card only if it's the player's turn;
 		- implement turns;
 	- play a game with only the cards with number's as values;
@@ -18,7 +19,9 @@ SETS
 
 	CARD_VALUES = {
 		N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,  // the numbers 0,1,...9
-		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE}	// effects
+		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE};	// effects
+
+	BOOLEANS = {true, false}
 CONSTANTS 
 	/* main sets */
 	VALID_CARDS,
@@ -67,7 +70,7 @@ PROPERTIES
 	// NUMBER CARDS
 	NUMBER_CARDS = NUMBERS * MAIN_COLORS &
 
-	VALID_CARDS = NUMBER_CARDS \/ EFFECT_CARDS
+	VALID_CARDS = NUMBER_CARDS \/ EFFECT_CARDS &
 
 	DECK = [WILD, WILD, WILD, WILD, //4x
 		WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, // 4x
@@ -100,7 +103,7 @@ PROPERTIES
 		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE),
 		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE)] &
 
-	//DECK = [(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE)] &
+	// DECK = [(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE)] &
 	/*DECK = ({1,2,3,4} * {WILD, WILD_DRAW_4}) \/
 		({1} * ( {N0} * MAIN_COLORS )) \/
 		({1,2} * ({N0} <<| NUMBER_CARDS)) \/
@@ -109,14 +112,19 @@ PROPERTIES
 	PLAYERS <: NAT1 &
 	PLAYERS = {1,2} &
 
-	/* where (val1 |-> col1) is the card to be played and
-	*  (val2 |-> col2) is the last discarded card
-	*/
+	/* 
+	 *  where (val1 |-> col1) is the card to be played and
+	 *  (val2 |-> col2) is the last discarded card
+	 */
+
 	CAN_PLAY_CARD : VALID_CARDS <-> VALID_CARDS &
+	
 	!(val1 , val2, col1, col2).(
 		(val1 : dom(VALID_CARDS) & val2 : dom(VALID_CARDS) &
-		 col1 : VALID_CARDS[{val1}] & col2 : VALID_CARDS[{val2}]) =>  
-   	 	(col1 = BLACK) or (col2 = BLACK) or (col1 = col2) or (val1 = val2)) &
+		 col1 : VALID_CARDS[{val1}] & col2 : VALID_CARDS[{val2}]) & 
+		((col1 = BLACK) or (col2 = BLACK) or (col1 = col2) or (val1 = val2)) =>
+   	 	((val1 |-> col1) |-> (val2 |-> col2)) : CAN_PLAY_CARD)
+		
   		
 	
 
@@ -136,11 +144,18 @@ INVARIANT
 
 INITIALISATION
  	player_order := [1,2] ||
-	draw_stack := DECK ||
-	discard_stack := [] ||
+	
+	// initialize the draw_stack with DECK, but discards 1 card
+	ANY idx1, idx2 WHERE idx1 : dom(DECK) & idx2 : dom(DECK) & idx1 /= idx2
+		THEN
+			draw_stack := front(DECK /|\ idx1) ^ (DECK \|/ idx1) ||	// remove the card from the draw_stack
+			discard_stack := [DECK(idx1)]	// add card to discard_stack
+		END ||
+	
 	players_hands := PLAYERS * seq({})
 	
 OPERATIONS
+	
 	// test operation:
 	// draw a card from de stack and discards it
 	cc <-- draw_card =
@@ -155,14 +170,14 @@ OPERATIONS
 		END;
 
 	// player pp will try to play the card cc
-	play(pp, cc) =
+	/*play(pp, cc) =
 		PRE pp : PLAYERS & cc : ran(players_hands(pp)) & (cc |-> last(discard_stack)) : CAN_PLAY_CARD // & it's pp's turn to play
 		THEN 
 			ANY hand, idx WHERE hand = players_hands(pp) & idx : dom((players_hands(pp)) |> {cc}) THEN
 				players_hands(pp) := front(hand /|\ idx) ^ (hand \|/ idx) ||	// remove the card from the players_hand
 				discard_stack := discard_stack <- hand(idx)	// add card to discard_stack
 			END
-		END;
+		END;*/
 
 	// player pp will draw a random card from the draw_stack to it's hand
 	cc <-- draw_card_hand(pp) =
