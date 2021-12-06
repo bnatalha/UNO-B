@@ -1,9 +1,24 @@
+/**
+TODO: 
+	- initialize with 7 cards for each player;
+	- plays_card only if it's the player's turn;
+		- implement turns;
+	- play a game with only the cards with number's as values;
+	- add more players;
+	- add Effect cards rules to the game;
+	- add more other rules;
+	- refact project;
+
+*/
+
 MACHINE UNO
 SETS
+	// The black color is used for the trap cards without a color
 	COLORS = {GREEN, BLUE, YELLOW, RED, BLACK};
+
 	CARD_VALUES = {
-		N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,
-		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE}
+		N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,  // the numbers 0,1,...9
+		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE}	// effects
 CONSTANTS 
 	/* main sets */
 	VALID_CARDS,
@@ -30,18 +45,18 @@ CONSTANTS
 PROPERTIES
 
 	MAIN_COLORS <: COLORS &
-	MAIN_COLORS = 		COLORS - {BLACK} &
+	MAIN_COLORS = COLORS - {BLACK} &
 
 	// EFFECTS
 	EFFECTS <: CARD_VALUES &
 	EFFECTS =	{eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE} &
 	// EFFECT CARDS
-	WILD = 		(eWILD |-> BLACK) &
-	WILD_DRAW_4 = 		(eWILD_DRAW_4 |-> BLACK) &
-	DRAW_2_SET = 		{eDRAW_2} * MAIN_COLORS &
-	SKIP_SET = 		{eSKIP} * MAIN_COLORS &
-	REVERSE_SET = 		{eREVERSE} * MAIN_COLORS &
-	EFFECT_CARDS = 	{WILD, WILD_DRAW_4} \/ 
+	WILD = (eWILD |-> BLACK) &
+	WILD_DRAW_4 = (eWILD_DRAW_4 |-> BLACK) &
+	DRAW_2_SET = {eDRAW_2} * MAIN_COLORS &
+	SKIP_SET = {eSKIP} * MAIN_COLORS &
+	REVERSE_SET = {eREVERSE} * MAIN_COLORS &
+	EFFECT_CARDS = {WILD, WILD_DRAW_4} \/ 
 			DRAW_2_SET \/ 
 			SKIP_SET \/ 
 			REVERSE_SET &
@@ -52,11 +67,9 @@ PROPERTIES
 	// NUMBER CARDS
 	NUMBER_CARDS = NUMBERS * MAIN_COLORS &
 
+	VALID_CARDS = NUMBER_CARDS \/ EFFECT_CARDS
 
-	VALID_CARDS = NUMBER_CARDS \/ EFFECT_CARDS &
-
-
-	/*DECK = [WILD, WILD, WILD, WILD, //4x
+	DECK = [WILD, WILD, WILD, WILD, //4x
 		WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, WILD_DRAW_4, // 4x
 		// 0 CARD
 		(N0 |-> RED), (N0 |-> GREEN), (N0 |-> YELLOW), (N0 |-> BLUE),
@@ -85,25 +98,28 @@ PROPERTIES
 		(eSKIP |-> RED), (eSKIP |-> GREEN), (eSKIP |-> YELLOW), (eSKIP |-> BLUE),
 		(eSKIP |-> RED), (eSKIP |-> GREEN), (eSKIP |-> YELLOW), (eSKIP |-> BLUE),
 		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE),
-		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE)] &*/
+		(eREVERSE |-> RED), (eREVERSE |-> GREEN), (eREVERSE |-> YELLOW), (eREVERSE |-> BLUE)] &
 
-	DECK = [(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE)] &
-
-	PLAYERS <: NAT1 &
-	PLAYERS = {1,2} &
-
-	CAN_PLAY_CARD : VALID_CARDS <-> VALID_CARDS &
-	!val1 , val2, col1, col2.(
-		(val1 : dom(VALID_CARDS) & val2 : dom(VALID_CARDS) &
-		 col1 : VALID_CARDS[{val1}] & col2 : VALID_CARDS[{val2}]) =>  
-   	 	(col1 = BLACK) or (col2 = BLACK) or (col1 = col2) or (val1 = val2)
-  		)
-
+	//DECK = [(N1 |-> RED), (N1 |-> GREEN), (N1 |-> YELLOW), (N1 |-> BLUE)] &
 	/*DECK = ({1,2,3,4} * {WILD, WILD_DRAW_4}) \/
 		({1} * ( {N0} * MAIN_COLORS )) \/
 		({1,2} * ({N0} <<| NUMBER_CARDS)) \/
 		({1,2} * (DRAW_2_SET \/ SKIP_SET \/ REVERSE_SET) )*/
-		
+
+	PLAYERS <: NAT1 &
+	PLAYERS = {1,2} &
+
+	/* where (val1 |-> col1) is the card to be played and
+	*  (val2 |-> col2) is the last discarded card
+	*/
+	CAN_PLAY_CARD : VALID_CARDS <-> VALID_CARDS &
+	!(val1 , val2, col1, col2).(
+		(val1 : dom(VALID_CARDS) & val2 : dom(VALID_CARDS) &
+		 col1 : VALID_CARDS[{val1}] & col2 : VALID_CARDS[{val2}]) =>  
+   	 	(col1 = BLACK) or (col2 = BLACK) or (col1 = col2) or (val1 = val2)) &
+  		
+	
+
 VARIABLES
 	draw_stack,
 	discard_stack,
@@ -125,6 +141,8 @@ INITIALISATION
 	players_hands := PLAYERS * seq({})
 	
 OPERATIONS
+	// test operation:
+	// draw a card from de stack and discards it
 	cc <-- draw_card =
 		PRE draw_stack /= []
 		THEN
@@ -136,8 +154,9 @@ OPERATIONS
 			END
 		END;
 
+	// player pp will try to play the card cc
 	play(pp, cc) =
-		PRE pp : PLAYERS & cc : ran(players_hands(pp)) & (cc |-> last(discard_stack)) : CAN_PLAY_CARD // & pp é jogador da vez
+		PRE pp : PLAYERS & cc : ran(players_hands(pp)) & (cc |-> last(discard_stack)) : CAN_PLAY_CARD // & it's pp's turn to play
 		THEN 
 			ANY hand, idx WHERE hand = players_hands(pp) & idx : dom((players_hands(pp)) |> {cc}) THEN
 				players_hands(pp) := front(hand /|\ idx) ^ (hand \|/ idx) ||	// remove the card from the players_hand
@@ -145,6 +164,7 @@ OPERATIONS
 			END
 		END;
 
+	// player pp will draw a random card from the draw_stack to it's hand
 	cc <-- draw_card_hand(pp) =
 		PRE draw_stack /= [] & pp : PLAYERS
 		THEN
