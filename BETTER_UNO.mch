@@ -18,7 +18,7 @@ TODO:
 	- refact project;
   	- [x] win a game;
   	- [x] draw when needed;
- 	- custom INITIALIZATION for a more randomized hand
+ 	- [x] custom INITIALIZATION for a more randomized hand
 */
 
 MACHINE BETTER_UNO
