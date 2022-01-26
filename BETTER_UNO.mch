@@ -100,7 +100,7 @@ VARIABLES
 	
 INVARIANT
 	draw_stack <: DECK &
-	discard_stack : iseq(CARDS) &
+	discard_stack : seq(CARDS) &	// because of wild cards strategy, may have repeated numbers
 	players_hands : PLAYERS >-> POW(DECK) &
 	winner : PLAYERS \/ {0} &
 	drawing : NAT &
@@ -109,46 +109,51 @@ INVARIANT
 
 	// no intersections between player's hands, or any stack
 	draw_stack /\ ran(discard_stack) = {} &
-	draw_stack /\ union({x | x : ran(players_hands)}) =  {} &
-	ran(discard_stack) /\ union({x | x : ran(players_hands)}) = {} &
+	draw_stack /\ union({hh | hh : ran(players_hands)}) =  {} &
+	ran(discard_stack) /\ union({hh | hh : ran(players_hands)}) = {} &
 
 	// always have all 108 cards on game
-	card(draw_stack) + size(discard_stack) + card(union({x | x : ran(players_hands)})) = 108 &
+	card(draw_stack) + size(discard_stack) + card(union({hh | hh : ran(players_hands)})) = 108 &
 	
 	players_order	: iseq(PLAYERS) &
+	players_order /= [] &
 	ran(players_order) = PLAYERS &
-	curr_player: PLAYERS
+	
+	// proof obligation
+	curr_player: dom(players_order)
 
 INITIALISATION
 	// shuffle initial hands, discards 2 cards
-//	ANY 	hand1, hand2, initial_discard
-//	WHERE	hand1 <: DECK & hand2 <: DECK & initial_discard : iseq(DECK) &
-//		card(hand1) = 7 & card(hand2) = 7 & size(initial_discard) = 2 &
-//		// can't have an intersection between the draws
-//		hand1 /\ hand2 = {} &
-//		hand1 /\ ran(initial_discard) = {} &
-//		hand2 /\ ran(initial_discard) = {}
-//	THEN 	draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
-//		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
-//		discard_stack := initial_discard ||
-//		players_order 	:= [1,2] || 
-//		curr_player := 1 ||
-//		winner := 0 ||
-//		drawing := 0 ||
-//		skipping := 0 ||
-//		set_wild_color := 0
-//	END
+	ANY 	hand1, hand2, initial_discard
+	WHERE	hand1 <: DECK & hand2 <: DECK & initial_discard : iseq(DECK) &
+		card(hand1) = 7 & card(hand2) = 7 & size(initial_discard) = 2 &
+		// can't have an intersection between the draws
+		hand1 /\ hand2 = {} &
+		hand1 /\ ran(initial_discard) = {} &
+		hand2 /\ ran(initial_discard) = {}
+	THEN 	draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
+		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
+		discard_stack := initial_discard ||
+		players_order 	:= [1,2] || 
+		//ANY pseq WHERE pseq : iseq(PLAYERS) & ran(pseq) = PLAYERS THEN players_order := pseq END ||
+		ANY pp WHERE pp : PLAYERS THEN curr_player := pp END ||
+		//curr_player := 1 ||
+		winner := 0 ||
+		drawing := 0 ||
+		skipping := 0 ||
+		set_wild_color := 0
+	END
 
 	// CUSTOM INITIALIZATION
-	draw_stack := DECK - (HAND1 \/ HAND2 \/ ran(INITIAL_DISCARD)) ||
-	players_hands := {(1 |-> HAND1), (2 |-> HAND2)} ||
-	discard_stack := INITIAL_DISCARD ||
-	players_order 	:= [1,2] || 
-	curr_player := 1 ||
-	winner := 0 ||
-	drawing := 0 ||
-	skipping := 0 ||
-	set_wild_color := 0
+//	draw_stack := DECK - (HAND1 \/ HAND2 \/ ran(INITIAL_DISCARD)) ||
+//	players_hands := {(1 |-> HAND1), (2 |-> HAND2)} ||
+//	discard_stack := INITIAL_DISCARD ||
+//	players_order 	:= [1,2] || 
+//	curr_player := 1 ||
+//	winner := 0 ||
+//	drawing := 0 ||
+//	skipping := 0 ||
+//	set_wild_color := 0
 
 OPERATIONS
 //	cc <-- card_color(ca) =
@@ -185,10 +190,14 @@ OPERATIONS
 	END;
 
 	cc <-- last_discard =
-	cc := last(discard_stack);
+	PRE discard_stack /= {}
+	THEN cc := last(discard_stack)
+	END;
 
 	cc <-- last_discard_desc =
-	cc := CARD_DESC(last(discard_stack));
+	PRE discard_stack /= {} & last(discard_stack) : CARDS
+	THEN cc := CARD_DESC(last(discard_stack))
+	END;
 
 	hh <-- hand_desc(pp) = 
 	PRE 	pp : PLAYERS
@@ -198,6 +207,7 @@ OPERATIONS
 	play(pp, cc) =
 	PRE 	pp : PLAYERS & 
 		pp = players_order(curr_player) &
+		players_hands(pp) /= {} &
 		cc : players_hands(pp) &
 		drawing = 0 &
 		skipping = 0 &
