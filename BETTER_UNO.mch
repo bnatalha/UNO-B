@@ -2,15 +2,23 @@
 TODO: 
 	- [x] initialize the discard_stack with 2 cards taken from the draw_stack;
 	- [x] initialize with 7 cards for each player;
-	- [/] plays_card only if it's the player's turn;
+	- [x] plays_card only if it's the player's turn;
 		- implement turns;
 	- [x] play a game with only the cards with number's as values;
 	- add more players;
-	- add effect cards rules to the game;
+	- [x] add effect cards rules to the game;
+		- +2
+		- reverse
+		- skip
+		- +4
+		- wild
 	- add other rules;
+		- play +1 effect per turn
+		- play +1 card per turn if its a double
 	- refact project;
-  - win a game;
-  - draw when needed;
+  	- [x] win a game;
+  	- [x] draw when needed;
+ 	- custom INITIALIZATION for a more randomized hand
 */
 
 MACHINE BETTER_UNO
@@ -21,29 +29,36 @@ SETS
 
 	sVALUE = {
 		N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,  // the numbers 0,1,...9
-		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE};	// effects
+		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE}	// effects
 
-	sBOOLEAN = { false, true }
-
-CONSTANTS 
-	CARDS, CARD_COLOR, CARD_VAL,
-	CARD_DESC, //HAND_DESC,
-	CAN_PLAY_CARD, CAN_PLAY,
-	PLAYERS
+CONSTANTS
+	DECK,
+	CARDS, 
+	CARD_COLOR,
+	CARD_VAL,
+	CARD_DESC,
+	PLAYERS,
+	HAND1, HAND2, INITIAL_DISCARD
 
 PROPERTIES
 	// building deck definitions...
-	CARDS = 1..108 &
+	DECK = 1..108 &
+	CARDS = DECK \/ 109..116 &	// 109..116 are special colors for effects
 	CARD_COLOR : CARDS -->> sCOLOR &
-	!ca.((ca : CARDS & ca > 100) => {ca |-> BLACK} <: CARD_COLOR) &
-	!ca.((ca : CARDS & ca <= 25) => {ca |-> RED} <: CARD_COLOR) &
-	!ca.((ca : CARDS & ca > 25 & ca <= 50) => {ca |-> GREEN} <: CARD_COLOR) &
-	!ca.((ca : CARDS & ca > 50 & ca <= 75) => {ca |-> BLUE} <: CARD_COLOR) &
-	!ca.((ca : CARDS & ca > 75 & ca <= 100) => {ca |-> YELLOW} <: CARD_COLOR) &
+	!ca.((ca : CARDS & ca <= 25) => (ca, RED) : CARD_COLOR) &
+	!ca.((ca : CARDS & ca > 25 & ca <= 50) => (ca, GREEN) : CARD_COLOR) &
+	!ca.((ca : CARDS & ca > 50 & ca <= 75) => (ca, BLUE) : CARD_COLOR) &
+	!ca.((ca : CARDS & ca > 75 & ca <= 100) => (ca, YELLOW) : CARD_COLOR) &
+	!ca.((ca : CARDS & ca > 100 & ca <= 108) => (ca, BLACK) : CARD_COLOR) &
+	// especial wild
+	!ca.((ca : CARDS & (ca = 109 or ca = 113)) => (ca, RED) : CARD_COLOR) &
+	!ca.((ca : CARDS & (ca = 110 or ca = 114)) => (ca, GREEN) : CARD_COLOR) &
+	!ca.((ca : CARDS & (ca = 111 or ca = 115)) => (ca, BLUE) : CARD_COLOR) &
+	!ca.((ca : CARDS & (ca = 112 or ca = 116)) => (ca, YELLOW) : CARD_COLOR) &
 
-	CARD_VAL : CARDS --> sVALUE &
-	!ca.((ca : CARDS & ca > 104) => {ca |-> eWILD_DRAW_4} <: CARD_VAL) &
-	!ca.((ca : CARDS & ca > 100 & ca < 104) => {ca |-> eWILD} <: CARD_VAL) &
+	CARD_VAL : CARDS -->> sVALUE &
+	!ca.((ca : CARDS & ca >= 101 & ca < 105) => {ca |-> eWILD} <: CARD_VAL) &
+	!ca.((ca : CARDS & ca >= 105 & ca < 109) => {ca |-> eWILD_DRAW_4} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 1 or ca mod 25 = (12 + 1))) => {ca |-> N1} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 2 or ca mod 25 = (12 + 2))) => {ca |-> N2} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 3 or ca mod 25 = (12 + 3))) => {ca |-> N3} <: CARD_VAL) &
@@ -57,127 +72,227 @@ PROPERTIES
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 11 or ca mod 25 = (12 + 11))) => {ca |-> eSKIP} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 12 or ca mod 25 = (12 + 12))) => {ca |-> eREVERSE} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & ca mod 25 = 0) => {ca |-> N0} <: CARD_VAL) &
+	// especial wild
+	!ca.((ca : CARDS & ca >= 109 & ca < 113) => {ca |-> eWILD} <: CARD_VAL) &
+	!ca.((ca : CARDS & ca >= 113 & ca < 117) => {ca |-> eWILD_DRAW_4} <: CARD_VAL) &
 
 	CARD_DESC : CARDS --> (sCOLOR * sVALUE) &
 	!ca.(ca : CARDS => (ca |-> (CARD_COLOR(ca) |-> CARD_VAL(ca))) : CARD_DESC) &
 
-	// TODO: error (infinite possibilities)
-	// HAND_DESC : iseq(CARDS) --> (CARDS * (sCOLOR * sVALUE)) &
-	//!hh.(hh : iseq(CARDS) => (!idx.(idx : dom(hh) => (hh |-> (idx |-> CARD_DESC(hh(idx)))) : HAND_DESC))) &
-	//!hh.(hh : iseq(CARDS) =>
-	//	(#des.(des : ran(CARD_DESC) => 
-	//	(#idx.(idx : dom(hh) => 
-	//	(CARD_DESC(hh(idx)) = des &
-	//	(hh |-> (idx |-> des)) : HAND_DESC)))))) &
-
-	// (c1 |-> c2) : CAN_PLAY_CARD implies that c1 can be played after c2
-	CAN_PLAY_CARD = (CARDS * CARDS) &
-	!(c1, c2).(
-	  (c1 : CARDS & c2 : CARDS & 
-           (CARD_VAL(c1) = CARD_VAL(c2) or // have the same value
-	    // CARD_COLOR(c1) = BLACK or	// the card being played is black
-            CARD_COLOR(c1) = CARD_COLOR(c2)) => // have the same color
-	 ((c1 |-> c2) : CAN_PLAY_CARD))) &
-
-	// TODO: condição não ta funcionando
-	CAN_PLAY = (iseq(CARDS) * CARDS) & //CANNOT
-	!(hh, cc).(
-		(hh : iseq(CARDS) & cc : CARDS => 
-        		(!ca.((ca : ran(hh) & (ca |-> cc) /: CAN_PLAY_CARD) =>
-		((hh |-> cc) : CAN_PLAY)
-		)))) &
-
 	PLAYERS <: NAT1 &
-	PLAYERS = {1,2}
+	PLAYERS = {1,2} &
 
-INVARIANT
-	draw_stack <: CARDS &
-	discard_stack : iseq(CARDS) &
-	players_hands : PLAYERS >-> iseq(CARDS) &
-	players_order	: iseq(PLAYERS) &
-	turn: PLAYERS
+	// MOCK
+	HAND1 = {1,8,40,32,103,106} &
+	HAND2 = {2,9,41,33,102,107} &
+	INITIAL_DISCARD = {(1 |-> 90), (2 |-> 91)}
 
 VARIABLES
 	draw_stack,
 	discard_stack,
 	players_hands,
 	players_order,
-	turn
+	curr_player,
+	winner,
+	drawing,
+	skipping,
+	set_wild_color
+	
+INVARIANT
+	draw_stack <: DECK &
+	discard_stack : iseq(CARDS) &
+	players_hands : PLAYERS >-> POW(DECK) &
+	winner : PLAYERS \/ {0} &
+	drawing : NAT &
+	skipping : NAT &
+	set_wild_color : {0,1} &
+
+	// no intersections between player's hands, or any stack
+	draw_stack /\ ran(discard_stack) = {} &
+	draw_stack /\ union({x | x : ran(players_hands)}) =  {} &
+	ran(discard_stack) /\ union({x | x : ran(players_hands)}) = {} &
+
+	// always have all 108 cards on game
+	card(draw_stack) + size(discard_stack) + card(union({x | x : ran(players_hands)})) = 108 &
+	
+	players_order	: iseq(PLAYERS) &
+	ran(players_order) = PLAYERS &
+	curr_player: PLAYERS
 
 INITIALISATION
 	// shuffle initial hands, discards 2 cards
-	ANY 	hand1, hand2, initial_discard
-	WHERE	hand1 : iseq(CARDS) & hand2 : iseq(CARDS) & initial_discard : iseq(CARDS) &
-		size(hand1) = 7 & size(hand2) = 7 & size(initial_discard) = 2 &
-		// can't have an intersection between the draws
-		ran(hand1) /\ ran(hand2) = {} &
-		ran(hand1) /\ ran(initial_discard) = {} &
-		ran(hand2) /\ ran(initial_discard) = {}
-		//card(union({ran(hand1), ran(hand2), ran(initial_discard)})) = (14 + 2)
-	THEN 	draw_stack := CARDS - (ran(hand1) \/ ran(hand2) \/ ran(initial_discard)) ||
-		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
-		discard_stack := initial_discard ||
-		players_order 	:= [1,2] || 
-		turn := 1
-	END
+//	ANY 	hand1, hand2, initial_discard
+//	WHERE	hand1 <: DECK & hand2 <: DECK & initial_discard : iseq(DECK) &
+//		card(hand1) = 7 & card(hand2) = 7 & size(initial_discard) = 2 &
+//		// can't have an intersection between the draws
+//		hand1 /\ hand2 = {} &
+//		hand1 /\ ran(initial_discard) = {} &
+//		hand2 /\ ran(initial_discard) = {}
+//	THEN 	draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
+//		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
+//		discard_stack := initial_discard ||
+//		players_order 	:= [1,2] || 
+//		curr_player := 1 ||
+//		winner := 0 ||
+//		drawing := 0 ||
+//		skipping := 0 ||
+//		set_wild_color := 0
+//	END
 
-	// TODO: generalized version for any number of players timing out
-	//ANY 	hand
-	//WHERE	hand : PLAYERS >-> iseq(CARDS) &
-	//	!pp.(pp : PLAYERS => size(hand(pp)) = 7) &
-	//	!(p1, p2).(p1 : PLAYERS & p2 : PLAYERS => 
-	//		ran(hand(p1)) /\ ran(hand(p2)) = {})
-	//THEN 	draw_stack := CARDS - ran(union(ran(hand))) ||
-	//	players_hands := hand ||
-	//	discard_stack := []
-	//END
+	// CUSTOM INITIALIZATION
+	draw_stack := DECK - (HAND1 \/ HAND2 \/ ran(INITIAL_DISCARD)) ||
+	players_hands := {(1 |-> HAND1), (2 |-> HAND2)} ||
+	discard_stack := INITIAL_DISCARD ||
+	players_order 	:= [1,2] || 
+	curr_player := 1 ||
+	winner := 0 ||
+	drawing := 0 ||
+	skipping := 0 ||
+	set_wild_color := 0
 
 OPERATIONS
-	cc <-- card_color(ca) =
-	PRE 	ca : CARDS
-	THEN 	cc := CARD_COLOR(ca)
-	END;
+//	cc <-- card_color(ca) =
+//	PRE 	ca : CARDS
+//	THEN 	cc := CARD_COLOR(ca)
+//	END;
+//
+//	cc <-- card_val(ca) =
+//	PRE 	ca : CARDS
+//	THEN 	cc := CARD_VAL(ca)
+//	END;
+//
+//	cc <-- card_desc(ca) =
+//	PRE 	ca : CARDS
+//	THEN 	cc := CARD_DESC(ca)
+//	END;
+//
+//	bb <-- can_play_card(c1, c2) = 
+//	PRE c1 : CARDS & c2 : CARDS
+//	THEN 	IF CARD_VAL(c1) = CARD_VAL(c2) or CARD_COLOR(c1) = CARD_COLOR(c2)
+//		THEN bb := true
+//		ELSE bb := false
+//		END
+//	END;
 
-	cc <-- card_val(ca) =
-	PRE 	ca : CARDS
-	THEN 	cc := CARD_VAL(ca)
-	END;
+	pp <-- current_player = pp := players_order(curr_player);
 
-	cc <-- card_desc(ca) =
-	PRE 	ca : CARDS
-	THEN 	cc := CARD_DESC(ca)
-	END;
-
-	hh <-- player_hand(pp) =
+	pp <-- get_winner =
+	pp := winner;
+	
+	hh <-- hand(pp) =
 	PRE	pp : PLAYERS
 	THEN 	hh := players_hands(pp)
 	END;
 
-	// TODO: is matching only when theres is only 1 card left at the hand
-	hh <-- player_hand_with_desc(pp) = 
+	cc <-- last_discard =
+	cc := last(discard_stack);
+
+	cc <-- last_discard_desc =
+	cc := CARD_DESC(last(discard_stack));
+
+	hh <-- hand_desc(pp) = 
 	PRE 	pp : PLAYERS
-	THEN	hh := {ee | !idx.(idx : dom(players_hands(pp)) => ((idx |-> CARD_DESC((players_hands(pp))(idx))) = ee))}
-	//THEN	hh := { ee | ee : (CARDS * (sCOLOR * sVALUE)) & 
-	//	(#des.(des : ran(CARD_DESC) => 
-	//	(#idx.(idx : dom(players_hands(pp)) => 
-	//	(CARD_DESC(hh(idx)) = des &
-	//	(idx |-> des) = ee)))))}
+	THEN	hh := { bb | bb : players_hands(pp) <| CARD_DESC} 
 	END;
 
 	play(pp, cc) =
 	PRE 	pp : PLAYERS & 
-		pp = players_order(turn) &
-		cc : ran(players_hands(pp)) &
-		(cc |-> last(discard_stack)) : CAN_PLAY_CARD //&
-		//(players_hands(pp) |-> last(discard_stack)) : CAN_PLAY
+		pp = players_order(curr_player) &
+		cc : players_hands(pp) &
+		drawing = 0 &
+		skipping = 0 &
+		winner = 0 &
+		set_wild_color = 0 &
+		// rules
+		(CARD_VAL(cc) = CARD_VAL(last(discard_stack)) or
+		 CARD_COLOR(cc) = CARD_COLOR(last(discard_stack)) or
+		 CARD_COLOR(cc) = BLACK)	
 	THEN
-		ANY hand, idx WHERE hand = players_hands(pp) & idx : dom((players_hands(pp)) |> {cc}) THEN
-			players_hands(pp) := front(hand /|\ idx) ^ (hand \|/ idx) ||	// remove the card from the players_hand
-			discard_stack := discard_stack <- hand(idx)	|| // add card to discard_stack
-			// TODO : transformar em propriedade
-			IF 	((turn + 1) mod card(PLAYERS) = 0)
-			THEN	turn := card(PLAYERS)
-			ELSE	turn := ((turn + 1) mod card(PLAYERS))
+		players_hands(pp) := players_hands(pp) - {cc} ||	// remove the card from the players_hand
+		discard_stack := discard_stack <- cc	|| // add card to discard_stack
+
+		// played an effect card
+		CASE CARD_VAL(cc) OF
+			EITHER 	eDRAW_2 THEN drawing := 2  
+			OR	eSKIP	THEN skipping := 1
+			OR 	eREVERSE	THEN players_order := rev(players_order)
+			OR	eWILD	THEN set_wild_color := 1
+			OR	eWILD_DRAW_4 THEN drawing:= 4 || set_wild_color := 1
+			ELSE skip
+			END
+		END ||
+
+		// set a winner, if there is any
+		IF	card(players_hands(pp)) - 1 = 0
+		THEN	winner := pp
+		ELSE	skip
+		END ||
+
+		// calculate next turn
+		IF 	(curr_player + 1) mod card(PLAYERS) = 0 
+		THEN	curr_player := card(PLAYERS)
+		ELSE	curr_player := (curr_player) mod card(PLAYERS) + 1
+		END
+		
+		
+	END;
+
+	set_color(cl) =
+	PRE	set_wild_color = 1 & cl : sCOLOR - {BLACK}
+	THEN	CASE CARD_VAL(last(discard_stack)) OF
+			EITHER 	eWILD 	THEN 
+				CASE cl	OF
+					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 109 
+					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 110
+					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 111
+					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 112
+					ELSE skip
+					END
+				END
+			OR	eWILD_DRAW_4	THEN
+				CASE cl	OF
+					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 113 
+					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 114
+					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 115
+					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 116
+					ELSE skip
+					END
+				END
+			ELSE skip
+			END
+		END ||
+		set_wild_color := 0
+	END;
+
+	skip_turn =
+	PRE	skipping > 0 & drawing = 0 & set_wild_color = 0
+	THEN	IF 	(curr_player + 1) mod card(PLAYERS) = 0 
+		THEN	curr_player := card(PLAYERS)
+		ELSE	curr_player := (curr_player) mod card(PLAYERS) + 1
+		END ||
+		skipping := skipping - 1
+	END;
+	
+	draw(pp) =
+	PRE 	pp : PLAYERS & 
+		pp = players_order(curr_player) &
+		card(draw_stack) > 0 &
+		winner = 0 &
+		skipping = 0 &
+		set_wild_color = 0 &
+		(drawing > 0 or
+		!(cc).(cc: players_hands(pp) => //rules
+			not((CARD_VAL(cc) = CARD_VAL(last(discard_stack)) or
+		 	CARD_COLOR(cc) = CARD_COLOR(last(discard_stack)) or
+			CARD_COLOR(cc) = BLACK))
+		))
+	THEN
+		ANY cc WHERE cc : draw_stack 
+		THEN	draw_stack := draw_stack - {cc} ||	// remove the card from draw_stack
+			players_hands(pp) := players_hands(pp) \/ {cc} || // add card to player's hand	
+			IF drawing > 0
+				THEN drawing := drawing - 1
+				ELSE skip
 			END
 		END
 	END
