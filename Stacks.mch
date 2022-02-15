@@ -1,5 +1,5 @@
 
-MACHINE CardStacks
+MACHINE Stacks
 
 SEES
 	Cards,
@@ -56,6 +56,13 @@ OPERATIONS
 	hh <-- hand_desc(pp) = 
 	PRE 	pp : PLAYERS
 	THEN	hh := { bb | bb : players_hands(pp) <| CARD_DESC} 
+	END;
+
+	// player_draw_card(pp,cc) =
+
+	push_discard_stack(cc) =
+	PRE cc : CARDS & cc /: ran(discard_stack)
+	THEN discard_stack := discard_stack <- cc 
 	END
 
 END
