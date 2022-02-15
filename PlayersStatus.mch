@@ -28,6 +28,11 @@ OPERATIONS
 
 	pp <-- get_winner = pp := winner;
 
+	set_winner(pp) =
+	PRE pp : PLAYERS & winner = 0
+	THEN winner := pp 
+	END;
+
 	set_curr_player(pp) =
 	PRE pp : PLAYERS & pp : ran(players_order)
 	THEN curr_player := pp 
