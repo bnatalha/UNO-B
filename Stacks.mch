@@ -31,20 +31,20 @@ INITIALISATION
 
 OPERATIONS
 
-	//	shuffle_deck =
- 	//	// shuffle initial hands, discards 2 cards
-	//	ANY 	hand1, hand2, initial_discard
-	//	WHERE	hand1 <: DECK & hand2 <: DECK & initial_discard : iseq(DECK) &
-	//		(ran((ran(initial_discard) <| CARD_VAL))) /\ {eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERT} = {} &	// initial_discard cant have effect cards
-	//		card(hand1) = 7 & card(hand2) = 7 & size(initial_discard) = 2 &
-	//		// can't have an intersection between the draws
-	//		hand1 /\ hand2 = {} &
-	//		hand1 /\ ran(initial_discard) = {} &
-	//		hand2 /\ ran(initial_discard) = {}
-	//	THEN 	draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
-	//		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
-	//		discard_stack := initial_discard
-	//	END;
+	shuffle_deck =
+ 	// shuffle initial hands, discards 2 cards
+	ANY 	hand1, hand2, initial_discard
+	WHERE	hand1 <: DECK & hand2 <: DECK & initial_discard : iseq(DECK) &
+		(ran((ran(initial_discard) <| CARD_VAL))) /\ {eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERT} = {} &	// initial_discard cant have effect cards
+		card(hand1) = 7 & card(hand2) = 7 & size(initial_discard) = 2 &
+		// can't have an intersection between the draws
+		hand1 /\ hand2 = {} &
+		hand1 /\ ran(initial_discard) = {} &
+		hand2 /\ ran(initial_discard) = {}
+	THEN 	draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
+		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
+		discard_stack := initial_discard
+	END;
 
 	hh <-- hand(pp) =
 	PRE	pp : PLAYERS & pp : dom(players_hands)
@@ -59,68 +59,68 @@ OPERATIONS
 	hh <-- hand_desc(pp) = 
 	PRE 	pp : PLAYERS & pp : dom(players_hands)
 	THEN	hh := { bb | bb : players_hands(pp) <| CARD_DESC} 
-	END
+	END;
 
-	//	cc <-- last_discard =
-	//	PRE discard_stack /= {}
-	//	THEN cc := last(discard_stack)
-	//	END;
+	cc <-- last_discard =
+	PRE discard_stack /= {}
+	THEN cc := last(discard_stack)
+	END;
 	
-	//	cc <-- last_discard_desc =
-	//	PRE discard_stack /= {} & last(discard_stack) : CARDS
-	//	THEN cc := CARD_DESC(last(discard_stack))
-	//	END;
+	cc <-- last_discard_desc =
+	PRE discard_stack /= {} & last(discard_stack) : CARDS
+	THEN cc := CARD_DESC(last(discard_stack))
+	END;
 
-	//	play_card(pp, cc) =
-	//	PRE pp = players_order(curr_player) &
-	//		players_hands(pp) /= {} &
-	//		cc : players_hands(pp) &
-	//		// rules
-	//		(CARD_VAL(cc) = CARD_VAL(last(discard_stack)) or
-	//			CARD_COLOR(cc) = CARD_COLOR(last(discard_stack)) or
-	//			CARD_COLOR(cc) = BLACK)	
-	//	THEN
-	//		players_hands(pp) := players_hands(pp) - {cc} ||	// remove the card from the players_hand
-	//		discard_stack := discard_stack <- cc // add card to discard_stack
-	//	END;
-//	
-	//	set_discard_color(cl) =
-	//	PRE cl : sCOLOR - {BLACK} & 
-	//		CARD_VAL(last(discard_stack)) : {eWILD, eWILD_DRAW_4}
-	//	THEN	CASE CARD_VAL(last(discard_stack)) OF
-	//			EITHER 	eWILD 	THEN 
-	//				CASE cl	OF
-	//					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 109 
-	//					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 110
-	//					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 111
-	//					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 112
-	//					ELSE skip
-	//					END
-	//				END
-	//			OR	eWILD_DRAW_4	THEN
-	//				CASE cl	OF
-	//					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 113 
-	//					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 114
-	//					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 115
-	//					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 116
-	//					ELSE skip
-	//					END
-	//				END
-	//			ELSE skip
-	//			END
-	//		END
-	//	END;
-//	
-	//	draw_card(pp) =
-	//	PRE pp = players_order(curr_player) &
-	//		card(draw_stack) > 0	// there are cards to draw from the stack
-	//	THEN
-	//		ANY 
-	//			cc WHERE cc : draw_stack 
-	//		THEN	
-	//			draw_stack := draw_stack - {cc} ||	// remove the card from draw_stack
-	//			players_hands(pp) := players_hands(pp) \/ {cc} // add card to player's hand	
-	//		END
-	//	END
+	play_card(pp, cc) =
+	PRE pp = players_order(curr_player) &
+		players_hands(pp) /= {} &
+		cc : players_hands(pp) &
+		// rules
+		(CARD_VAL(cc) = CARD_VAL(last(discard_stack)) or
+			CARD_COLOR(cc) = CARD_COLOR(last(discard_stack)) or
+			CARD_COLOR(cc) = BLACK)	
+	THEN
+		players_hands(pp) := players_hands(pp) - {cc} ||	// remove the card from the players_hand
+		discard_stack := discard_stack <- cc // add card to discard_stack
+	END;
+	
+	set_discard_color(cl) =
+	PRE cl : sCOLOR - {BLACK} & 
+		CARD_VAL(last(discard_stack)) : {eWILD, eWILD_DRAW_4}
+	THEN	CASE CARD_VAL(last(discard_stack)) OF
+			EITHER 	eWILD 	THEN 
+				CASE cl	OF
+					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 109 
+					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 110
+					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 111
+					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 112
+					ELSE skip
+					END
+				END
+			OR	eWILD_DRAW_4	THEN
+				CASE cl	OF
+					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 113 
+					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 114
+					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 115
+					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 116
+					ELSE skip
+					END
+				END
+			ELSE skip
+			END
+		END
+	END;
+	
+	draw_card(pp) =
+	PRE pp = players_order(curr_player) &
+		card(draw_stack) > 0	// there are cards to draw from the stack
+	THEN
+		ANY 
+			cc WHERE cc : draw_stack 
+		THEN	
+			draw_stack := draw_stack - {cc} ||	// remove the card from draw_stack
+			players_hands(pp) := players_hands(pp) \/ {cc} // add card to player's hand	
+		END
+	END
 
 END
