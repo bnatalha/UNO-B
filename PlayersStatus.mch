@@ -33,6 +33,9 @@ OPERATIONS
 	THEN winner := pp 
 	END;
 
+	revert_players_order =
+	players_order := rev(players_order);
+
 	set_curr_player(pp) =
 	PRE pp : PLAYERS & pp : ran(players_order)
 	THEN curr_player := pp 

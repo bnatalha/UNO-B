@@ -6,7 +6,7 @@ SETS
 
 	sVALUE = {
 		N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,  // the numbers 0,1,...9
-		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERSE}	// effects
+		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERT}	// effects
 
 CONSTANTS
 	DECK,
@@ -46,7 +46,7 @@ PROPERTIES
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 9 or ca mod 25 = (12 + 9))) => {ca |-> N9} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 10 or ca mod 25 = (12 + 10))) => {ca |-> eDRAW_2} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 11 or ca mod 25 = (12 + 11))) => {ca |-> eSKIP} <: CARD_VAL) &
-	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 12 or ca mod 25 = (12 + 12))) => {ca |-> eREVERSE} <: CARD_VAL) &
+	!ca.((ca : CARDS & ca <= 100 & (ca mod 25 = 12 or ca mod 25 = (12 + 12))) => {ca |-> eREVERT} <: CARD_VAL) &
 	!ca.((ca : CARDS & ca <= 100 & ca mod 25 = 0) => {ca |-> N0} <: CARD_VAL) &
 	// especial wild
 	!ca.((ca : CARDS & ca >= 109 & ca < 113) => {ca |-> eWILD} <: CARD_VAL) &

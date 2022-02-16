@@ -59,8 +59,18 @@ OPERATIONS
 	END;
 
 	hh <-- hand(pp) =
-	PRE	pp : PLAYERS
+	PRE	pp : PLAYERS & pp : dom(players_hands)
 	THEN 	hh := players_hands(pp)
+	END;
+
+	hh <-- hand_qty(pp) =
+	PRE	pp : PLAYERS & pp : dom(players_hands)
+	THEN 	hh := card(players_hands(pp))
+	END;
+
+	hh <-- hand_desc(pp) = 
+	PRE 	pp : PLAYERS & pp : dom(players_hands)
+	THEN	hh := { bb | bb : players_hands(pp) <| CARD_DESC} 
 	END;
 
 	cc <-- last_discard =
@@ -71,11 +81,6 @@ OPERATIONS
 	cc <-- last_discard_desc =
 	PRE discard_stack /= {} & last(discard_stack) : CARDS
 	THEN cc := CARD_DESC(last(discard_stack))
-	END;
-
-	hh <-- hand_desc(pp) = 
-	PRE 	pp : PLAYERS
-	THEN	hh := { bb | bb : players_hands(pp) <| CARD_DESC} 
 	END;
 
 	// player_draw_card(pp,cc) =
@@ -93,9 +98,43 @@ OPERATIONS
 		discard_stack := discard_stack <- cc // add card to discard_stack
 	END;
 
-	push_discard_stack(cc) =
-	PRE cc : CARDS & cc /: ran(discard_stack)
-	THEN discard_stack := discard_stack <- cc 
+	set_discard_color(cl) =
+	PRE cl : sCOLOR - {BLACK} & 
+		CARD_VAL(last(discard_stack)) : {eWILD, eWILD_DRAW_4}
+	THEN	CASE CARD_VAL(last(discard_stack)) OF
+			EITHER 	eWILD 	THEN 
+				CASE cl	OF
+					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 109 
+					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 110
+					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 111
+					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 112
+					ELSE skip
+					END
+				END
+			OR	eWILD_DRAW_4	THEN
+				CASE cl	OF
+					EITHER	RED	THEN	discard_stack := front(discard_stack) <- 113 
+					OR	GREEN	THEN	discard_stack := front(discard_stack) <- 114
+					OR	BLUE	THEN	discard_stack := front(discard_stack) <- 115
+					OR	YELLOW	THEN	discard_stack := front(discard_stack) <- 116
+					ELSE skip
+					END
+				END
+			ELSE skip
+			END
+		END
+	END;
+
+	draw_card(pp) =
+	PRE pp = players_order(curr_player) &
+		card(draw_stack) > 0	// there are cards to draw from the stack
+	THEN
+		ANY 
+			cc WHERE cc : draw_stack 
+		THEN	
+			draw_stack := draw_stack - {cc} ||	// remove the card from draw_stack
+			players_hands(pp) := players_hands(pp) \/ {cc} // add card to player's hand	
+		END
 	END
 
 END

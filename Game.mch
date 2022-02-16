@@ -5,32 +5,21 @@ SEES
 	Cards
 
 VARIABLES
-	drawing,
-	skipping
+	drawing
 	
 INVARIANT
-	drawing : NAT &
-	skipping : NAT
+	drawing : NAT
 
 INITIALISATION
-	drawing := 0 ||
-	skipping := 0
-
+	drawing := 0
 
 OPERATIONS
 
 	nn <-- get_drawing = nn := drawing;
 
-	nn <-- get_skipping = nn := skipping;
-
-	//set_drawing(nn) =
-	//PRE 	nn : NAT
-	//THEN	drawing := nn
-	//END; 
-
-	set_skipping(nn) =
+	set_drawing(nn) =
 	PRE 	nn : NAT
-	THEN	skipping := nn
+	THEN	drawing := nn
 	END
 
 END
