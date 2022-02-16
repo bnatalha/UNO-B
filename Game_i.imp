@@ -1,0 +1,25 @@
+IMPLEMENTATION Game_i
+REFINES Game
+
+SEES
+	Cards
+
+CONCRETE_VARIABLES
+	drawing_i
+
+INVARIANT
+	drawing_i : 0..1000 &
+	drawing_i = drawing
+	
+INITIALISATION
+	drawing_i := 0
+
+OPERATIONS
+
+	nn <-- get_drawing = 
+	nn := drawing_i;
+
+	set_drawing(nn) =
+	drawing_i := nn
+
+END

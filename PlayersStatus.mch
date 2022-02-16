@@ -9,9 +9,8 @@ VARIABLES
 	winner
 
 INVARIANT
-	players_order	: iseq(PLAYERS) &
-	players_order /= [] &
-	ran(players_order) = PLAYERS &
+	players_order : PLAYERS >-> PLAYERS &
+	players_order /= {} &
 
 	winner : PLAYERS \/ {0} &
 	
@@ -21,7 +20,7 @@ INVARIANT
 INITIALISATION
 	winner := 0 ||
 	ANY pp WHERE pp : PLAYERS THEN curr_player := pp END ||
-	players_order := [1,2]
+	players_order := (%xx.(xx : PLAYERS | xx))
 
 OPERATIONS
 	pp <-- current_player = pp := players_order(curr_player);

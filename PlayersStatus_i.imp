@@ -1,0 +1,49 @@
+IMPLEMENTATION PlayersStatus_i
+REFINES PlayersStatus 
+
+SEES
+	Players
+
+CONCRETE_VARIABLES
+	players_order_i,
+	po_pointer,
+	winner_i
+
+INVARIANT
+	players_order_i : PLAYERS >-> PLAYERS &
+	players_order_i = players_order &
+
+	po_pointer : PLAYERS &
+	po_pointer = curr_player &
+
+	winner_i : PLAYERS_AND_WINNER &
+	winner_i = winner
+
+INITIALISATION
+	po_pointer := 1;
+	winner_i := 0;
+	players_order_i := PLAYERS * {1};
+	players_order_i(2) := 2
+
+OPERATIONS
+	pp <-- current_player = 
+	IF po_pointer >= 1
+	THEN pp := players_order_i(po_pointer)
+	END;
+
+	pp <-- get_winner = 
+	pp := winner_i;
+
+	set_winner(pp) =
+	winner_i := pp;
+
+	revert_players_order =
+	players_order_i := rev(players_order_i);
+
+	next_turn =
+	IF 	(po_pointer + 1) mod card(PLAYERS) = 0 
+	THEN	po_pointer := card(PLAYERS)
+	ELSE	po_pointer := (po_pointer) mod card(PLAYERS) + 1
+	END
+
+END

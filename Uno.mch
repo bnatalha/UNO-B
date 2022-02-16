@@ -48,7 +48,7 @@ OPERATIONS
 		THEN	set_winner(pp) ||
 				state := DONE
 		ELSE	state := SETTING_EFFECTS
-		END ||
+		END;
 
 		next_turn
 	END;

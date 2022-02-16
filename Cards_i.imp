@@ -1,0 +1,8 @@
+IMPLEMENTATION Cards_i
+REFINES Cards
+
+VALUES
+	DECK = 1..108;
+	CARDS = 1..116
+
+END

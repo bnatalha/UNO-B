@@ -1,7 +1,6 @@
 MACHINE Game
 
 SEES
-	Stacks,
 	Cards
 
 VARIABLES

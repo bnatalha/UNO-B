@@ -8,18 +8,22 @@ SETS
 		N0,N1,N2,N3,N4,N5,N6,N7,N8,N9,  // the numbers 0,1,...9
 		eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERT}	// effects
 
-CONSTANTS
-	DECK,
-	CARDS, 
+ABSTRACT_CONSTANTS 
 	CARD_COLOR,
 	CARD_VAL,
 	CARD_DESC
 	// HAND1, HAND2, INITIAL_DISCARD
 
+CONCRETE_CONSTANTS
+	DECK,
+	CARDS,
+	CARDS_FOR_ARRAY
+
 PROPERTIES
 	// building deck definitions...
 	DECK = 1..108 &
 	CARDS = DECK \/ 109..116 &	// 109..116 are special colors for effects
+	CARDS_FOR_ARRAY = CARDS \/ {-1} &
 	CARD_COLOR : CARDS -->> sCOLOR &
 	!ca.((ca : CARDS & ca <= 25) => (ca, RED) : CARD_COLOR) &
 	!ca.((ca : CARDS & ca > 25 & ca <= 50) => (ca, GREEN) : CARD_COLOR) &
