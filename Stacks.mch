@@ -25,35 +25,23 @@ INVARIANT
 	card(draw_stack) + size(discard_stack) + card(union({hh | hh : ran(players_hands)})) = 108
 	
 INITIALISATION
-	draw_stack := DECK ||
+	draw_stack := DECK - {1} ||
 	discard_stack := [] ||
-	players_hands := []
+	players_hands := {(1 |-> {}), (2 |-> {1})}
 
 OPERATIONS
 
-	//	shuffle_deck =
-	//	// shuffle initial hands, discards 2 cards
-	//	ANY 	hand1, hand2, initial_discard
-	//	WHERE	hand1 <: DECK & hand2 <: DECK & initial_discard : iseq(DECK) &
-	//		card(hand1) = 7 & card(hand2) = 7 & size(initial_discard) = 2 &
-	//		// can't have an intersection between the draws
-	//		hand1 /\ hand2 = {} &
-	//		hand1 /\ ran(initial_discard) = {} &
-	//		hand2 /\ ran(initial_discard) = {}
-	//	THEN 	draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
-	//		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
-	//		discard_stack := initial_discard
-	//	END;
-
 	shuffle_deck =
-	ANY hand1, hand2, initial_discard
-	WHERE 
-		hand1 = {1,8,40,32,103,106} & 
-		hand2 = {2,9,41,33,102,107} &
-		// initial_discard = {(1 |-> 90), (2 |-> 91)}
-		initial_discard = {(1 |-> 105)}	// +4
-	THEN
-		draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
+ 	// shuffle initial hands, discards 2 cards
+	ANY 	hand1, hand2, initial_discard
+	WHERE	hand1 <: DECK & hand2 <: DECK & initial_discard : iseq(DECK) &
+		(ran((ran(initial_discard) <| CARD_VAL))) /\ {eWILD, eWILD_DRAW_4, eDRAW_2, eSKIP, eREVERT} = {} &	// initial_discard cant have effect cards
+		card(hand1) = 7 & card(hand2) = 7 & size(initial_discard) = 2 &
+		// can't have an intersection between the draws
+		hand1 /\ hand2 = {} &
+		hand1 /\ ran(initial_discard) = {} &
+		hand2 /\ ran(initial_discard) = {}
+	THEN 	draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
 		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
 		discard_stack := initial_discard
 	END;

@@ -36,10 +36,11 @@ OPERATIONS
 	revert_players_order =
 	players_order := rev(players_order);
 
-	set_curr_player(pp) =
-	PRE pp : PLAYERS & pp : ran(players_order)
-	THEN curr_player := pp 
+	next_turn =
+	IF 	(curr_player + 1) mod card(PLAYERS) = 0 
+	THEN	curr_player := card(PLAYERS)
+	ELSE	curr_player := (curr_player) mod card(PLAYERS) + 1
 	END
 
-
+	
 END

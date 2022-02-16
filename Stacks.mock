@@ -1,0 +1,13 @@
+shuffle_deck =
+	ANY hand1, hand2, initial_discard
+	WHERE 
+		// hand1 = {1,8,40,32,103,106} & 
+		hand1 = {106} & 
+		hand2 = {2,9,11,33,102,107} &
+		// initial_discard = {(1 |-> 90), (2 |-> 91)}
+		initial_discard = {(1 |-> 105)}	// +4
+	THEN
+		draw_stack := DECK - (hand1 \/ hand2 \/ ran(initial_discard)) ||
+		players_hands := {(1 |-> hand1), (2 |-> hand2)} ||
+		discard_stack := initial_discard
+	END;

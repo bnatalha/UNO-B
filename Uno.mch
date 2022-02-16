@@ -11,7 +11,8 @@ INCLUDES
 	Game
 
 PROMOTES
-	hand, hand_desc, hand_qty, last_discard, last_discard_desc	// Stacks
+	hand, hand_desc, hand_qty, last_discard, last_discard_desc, // Stacks
+	get_winner	// PlayersStatus
 
 VARIABLES
 	state
@@ -49,11 +50,7 @@ OPERATIONS
 		ELSE	state := SETTING_EFFECTS
 		END ||
 
-		// calculate next player
-		IF 	(curr_player + 1) mod card(PLAYERS) = 0 
-		THEN	set_curr_player(card(PLAYERS))
-		ELSE	set_curr_player((curr_player) mod card(PLAYERS) + 1)
-		END
+		next_turn
 	END;
 
 	set_effects =
@@ -80,15 +77,6 @@ OPERATIONS
 		ELSE	state := PLAYING	
 		END
 	END;
-
-	//	skip_turn =
-	//	PRE	skipping > 0 & drawing = 0 & setting_wild_color = 0
-	//	THEN	IF 	(curr_player + 1) mod card(PLAYERS) = 0 
-	//		THEN	set_curr_player(card(PLAYERS))
-	//		ELSE	set_curr_player((curr_player) mod card(PLAYERS) + 1)
-	//		END ||
-	//		set_skipping(skipping - 1)
-	//	END
 	
 	draw(pp) =
 	PRE pp : PLAYERS & 
@@ -110,5 +98,12 @@ OPERATIONS
 			THEN state := PLAYING
 			ELSE skip
 		END
+	END;
+
+	skip_turn = 
+	PRE state = SKIPPING
+	THEN
+		next_turn ||
+		state := PLAYING
 	END
 END
