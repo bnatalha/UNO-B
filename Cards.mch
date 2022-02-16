@@ -16,14 +16,12 @@ ABSTRACT_CONSTANTS
 
 CONCRETE_CONSTANTS
 	DECK,
-	CARDS,
-	CARDS_FOR_ARRAY
+	CARDS
 
 PROPERTIES
 	// building deck definitions...
 	DECK = 1..108 &
 	CARDS = DECK \/ 109..116 &	// 109..116 are special colors for effects
-	CARDS_FOR_ARRAY = CARDS \/ {-1} &
 	CARD_COLOR : CARDS -->> sCOLOR &
 	!ca.((ca : CARDS & ca <= 25) => (ca, RED) : CARD_COLOR) &
 	!ca.((ca : CARDS & ca > 25 & ca <= 50) => (ca, GREEN) : CARD_COLOR) &
